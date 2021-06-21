@@ -19348,6 +19348,40 @@ index 70ec2feef1553afca2c8cca3a7f19498637b41d5..776f4b5335621e5237ab9339604a097e
          if (i < SharedConstants.getCurrentVersion().getWorldVersion()) {
              nbttagcompound.putInt("DataVersion", SharedConstants.getCurrentVersion().getWorldVersion());
          }
+diff --git a/src/main/java/net/minecraft/world/level/chunk/storage/EntityStorage.java b/src/main/java/net/minecraft/world/level/chunk/storage/EntityStorage.java
+index 572a013445bd83d366cce27d0e015ba8271df7e0..0e8ae9a7204bdea8026dbdc29d00db611db10906 100644
+--- a/src/main/java/net/minecraft/world/level/chunk/storage/EntityStorage.java
++++ b/src/main/java/net/minecraft/world/level/chunk/storage/EntityStorage.java
+@@ -126,7 +126,7 @@ public class EntityStorage implements EntityPersistentStorage<Entity> {
+ 
+     private CompoundTag upgradeChunkTag(CompoundTag chunkTag) {
+         int i = getVersion(chunkTag);
+-        return NbtUtils.update(this.fixerUpper, DataFixTypes.ENTITY_CHUNK, chunkTag, i);
++        return ca.spottedleaf.dataconverter.minecraft.MCDataConverter.convertTag(ca.spottedleaf.dataconverter.minecraft.datatypes.MCTypeRegistry.ENTITY_CHUNK, chunkTag, i, SharedConstants.getCurrentVersion().getWorldVersion()); // Tuinity - route to new converter system
+     }
+ 
+     public static int getVersion(CompoundTag chunkTag) {
+diff --git a/src/main/java/net/minecraft/world/level/chunk/storage/SectionStorage.java b/src/main/java/net/minecraft/world/level/chunk/storage/SectionStorage.java
+index 90f7b06bd2c558be35c4577044fa033e1fb5cc22..25f21ec1c0ebfc10a5de6748de3a48f4946300b7 100644
+--- a/src/main/java/net/minecraft/world/level/chunk/storage/SectionStorage.java
++++ b/src/main/java/net/minecraft/world/level/chunk/storage/SectionStorage.java
+@@ -135,7 +135,15 @@ public class SectionStorage<R> extends RegionFileStorage implements AutoCloseabl
+             int j = getVersion(dynamic);
+             int k = SharedConstants.getCurrentVersion().getWorldVersion();
+             boolean bl = j != k;
+-            Dynamic<T> dynamic2 = this.fixerUpper.update(this.type.getType(), dynamic, j, k);
++            // Tuinity start - route to new converter system
++            Dynamic<T> dynamic2;
++
++            if (this.type.getType() == net.minecraft.util.datafix.fixes.References.POI_CHUNK) {
++                dynamic2 = new Dynamic<>(dynamic.getOps(), (T)ca.spottedleaf.dataconverter.minecraft.MCDataConverter.convertTag(ca.spottedleaf.dataconverter.minecraft.datatypes.MCTypeRegistry.POI_CHUNK, (CompoundTag)dynamic.getValue(), j, k));
++            } else {
++                dynamic2 = this.fixerUpper.update(this.type.getType(), dynamic, j, k);
++            }
++            // Tuinity end - route to new converter system
+             OptionalDynamic<T> optionalDynamic = dynamic2.get("Sections");
+ 
+             for(int l = this.levelHeightAccessor.getMinSection(); l < this.levelHeightAccessor.getMaxSection(); ++l) {
 diff --git a/src/main/java/net/minecraft/world/level/storage/PlayerDataStorage.java b/src/main/java/net/minecraft/world/level/storage/PlayerDataStorage.java
 index 6727468946ea5f60bd80549f827a7c2b9a42b98b..97b97f69085a332fd4ca6d7500315b125f3c332b 100644
 --- a/src/main/java/net/minecraft/world/level/storage/PlayerDataStorage.java
